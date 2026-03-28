@@ -37,6 +37,7 @@ export default function LoginForm() {
 
         // Redirect to the dashboard upon successful login
         router.push("/dashboard");
+        router.refresh();
       } catch (error: any) {
         toast.error("Sign in failed", {
           description: error.message,
