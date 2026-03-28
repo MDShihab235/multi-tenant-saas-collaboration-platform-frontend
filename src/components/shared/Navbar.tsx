@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Zap, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Logout } from "../module/authentication/logout";
 
 const navLinks = [
+  { name: "Home", href: "/" },
   { name: "Features", href: "#features" },
   { name: "Pricing", href: "#pricing" },
   { name: "About", href: "/about" },
@@ -31,7 +33,7 @@ export default function Navbar() {
           <div className="bg-primary p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
             <Zap className="w-5 h-5 text-primary-foreground fill-current" />
           </div>
-          <span className="text-xl font-bold tracking-tight">Nova</span>
+          <span className="text-xl font-bold tracking-tight">Collab Pro</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -69,6 +71,7 @@ export default function Navbar() {
                     Log in
                   </Button>
                 </Link>
+                <Logout />
                 <Link href="/register">
                   <Button size="sm" className="rounded-full px-5">
                     Get Started
@@ -86,7 +89,7 @@ export default function Navbar() {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetContent side="right" className="w-75 sm:w-100">
                 <nav className="flex flex-col gap-4 mt-8">
                   {navLinks.map((link) => (
                     <Link
