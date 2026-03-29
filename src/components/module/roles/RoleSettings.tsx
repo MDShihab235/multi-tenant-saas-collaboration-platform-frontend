@@ -23,27 +23,42 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { CreateRoleModal } from "./CreateRoleModel"; // Ensure the filename matches (Model vs Modal)
+import { useAuth } from "@/hooks/use-auth";
 
 export default function RolesSettings() {
   const { orgSlug } = useParams();
   const [roles, setRoles] = useState<OrganizationRole[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { user } = useAuth(); // Get the user and their memberships
+
+  // 2. Find the current organization ID based on the slug in the URL
+  const currentOrg = user?.memberships?.find(
+    (m) => m.organization.slug === orgSlug,
+  )?.organization;
+
+  // This is the real UUID now
+
+  // 1. ADD STATE FOR MODAL
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // In a real app, retrieve orgId from your global Zustand/Context store
-  const orgId = "UUID_FROM_STORE";
+  const orgId = currentOrg?.id;
+
+  const fetchRoles = async () => {
+    if (!orgId) return;
+    try {
+      const data = await organizationService.getOrganizationRoles(orgId);
+      setRoles(data);
+    } catch (error: any) {
+      toast.error("Error", { description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRoles = async () => {
-      if (!orgId) return;
-      try {
-        const data = await organizationService.getOrganizationRoles(orgId);
-        setRoles(data);
-      } catch (error: any) {
-        toast.error("Error", { description: error.message });
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRoles();
   }, [orgId]);
 
@@ -65,7 +80,12 @@ export default function RolesSettings() {
             Define access levels for members of your workspace.
           </p>
         </div>
-        <Button className="rounded-xl font-bold">
+
+        {/* 2. TRIGGER MODAL ON CLICK */}
+        <Button
+          className="rounded-xl font-bold"
+          onClick={() => setIsModalOpen(true)}
+        >
           <Plus className="w-4 h-4 mr-2" /> Create Custom Role
         </Button>
       </div>
@@ -134,6 +154,14 @@ export default function RolesSettings() {
           </div>
         ))}
       </div>
+
+      {/* 3. PLACE THE MODAL COMPONENT HERE */}
+      <CreateRoleModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        orgId={orgId as string} // Pass the real ID
+        onSuccess={() => fetchRoles()}
+      />
     </div>
   );
 }

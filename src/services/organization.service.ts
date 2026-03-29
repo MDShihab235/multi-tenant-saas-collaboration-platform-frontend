@@ -75,6 +75,19 @@ export interface RoleResponse {
   name: string;
   organizationId: string;
 }
+export interface RolePermissionDetail {
+  role: {
+    id: string;
+    name: string;
+  };
+  permissions: {
+    id: string;
+    resource: string; // e.g., "PROJECT"
+    action: string; // e.g., "CREATE"
+    assignedAt: string;
+  }[];
+  total: number;
+}
 
 export const organizationService = {
   create: async (data: CreateOrgPayload) => {
@@ -119,7 +132,7 @@ export const organizationService = {
   },
   getOrganizationRoles: async (orgId: string): Promise<OrganizationRole[]> => {
     try {
-      const response = await api.get(`/api/v1/roles/${orgId}`);
+      const response = await api.get(`/api/v1/role/${orgId}`);
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Failed to load roles");
@@ -135,6 +148,32 @@ export const organizationService = {
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || "Failed to create custom role",
+      );
+    }
+  },
+  getRoleById: async (
+    orgId: string,
+    roleId: string,
+  ): Promise<OrganizationRole> => {
+    try {
+      const response = await api.get(`/api/v1/role/${orgId}/${roleId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to load role details",
+      );
+    }
+  },
+  getRolePermissions: async (
+    orgId: string,
+    roleId: string,
+  ): Promise<RolePermissionDetail> => {
+    try {
+      const response = await api.get(`/api/v1/permission/${orgId}/${roleId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to load role permissions",
       );
     }
   },

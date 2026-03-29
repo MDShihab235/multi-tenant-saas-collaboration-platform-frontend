@@ -6,12 +6,18 @@ interface User {
   name: string;
   email: string;
   image?: string;
+  memberships?: {
+    organization: { id: string; name: string; slug: string };
+    role: { id: string; name: string };
+  }[];
+  ownedOrganizations?: { id: string; name: string; slug: string }[];
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+
   // Actions
   setUser: (user: User | null) => void;
   fetchUser: () => Promise<void>;
@@ -58,7 +64,21 @@ export const useAuth = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const data = await userService.getAuthMe();
-      set({ user: data, isAuthenticated: true, isLoading: false });
+      const transformedUser: User = {
+        ...data,
+        memberships: data.memberships?.map((m) => ({
+          organization: {
+            id: m.organizationId,
+            name: m.organization.name,
+            slug: m.organization.slug,
+          },
+          role: {
+            id: m.id,
+            name: m.role,
+          },
+        })),
+      };
+      set({ user: transformedUser, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ user: null, isAuthenticated: false, isLoading: false });
     }

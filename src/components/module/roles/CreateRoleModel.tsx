@@ -39,7 +39,7 @@ export function CreateRoleModal({
     setIsLoading(true);
     try {
       const newRole = await organizationService.createCustomRole(orgId, {
-        name: roleName.trim(),
+        name: roleName,
       });
 
       toast.success("Role Created", {
@@ -50,7 +50,20 @@ export function CreateRoleModal({
       onSuccess(newRole.id); // Passes ID back to parent to open Permission screen
       onClose();
     } catch (error: any) {
-      toast.error("Error", { description: error.message });
+      // Check for the unique constraint error message from your backend
+      if (
+        error.message.includes("P2002") ||
+        error.message.includes("already exists")
+      ) {
+        toast.error("Role name taken", {
+          description:
+            "A role with this name already exists in this workspace.",
+        });
+      } else {
+        toast.error("Database Error", {
+          description: "Please check if the Organization ID is valid.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
