@@ -16,6 +16,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   fetchUser: () => Promise<void>;
   logout: () => void;
+  fetchAuthMe: () => Promise<void>;
 }
 
 export const useAuth = create<AuthState>((set) => ({
@@ -52,5 +53,14 @@ export const useAuth = create<AuthState>((set) => ({
   logout: () => {
     // Clear any local storage/cookies if necessary
     set({ user: null, isAuthenticated: false, isLoading: false });
+  },
+  fetchAuthMe: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await userService.getAuthMe();
+      set({ user: data, isAuthenticated: true, isLoading: false });
+    } catch (error) {
+      set({ user: null, isAuthenticated: false, isLoading: false });
+    }
   },
 }));

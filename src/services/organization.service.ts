@@ -53,6 +53,29 @@ export interface OrganizationStats {
   };
 }
 
+export interface OrganizationRole {
+  id: string;
+  name: string;
+  description?: string;
+  isSystemRole: boolean; // e.g., 'Owner' cannot be deleted
+  rolePermissions: {
+    permission: string;
+  }[];
+  _count: {
+    memberships: number;
+  };
+}
+
+export interface CreateRolePayload {
+  name: string;
+}
+
+export interface RoleResponse {
+  id: string;
+  name: string;
+  organizationId: string;
+}
+
 export const organizationService = {
   create: async (data: CreateOrgPayload) => {
     try {
@@ -91,6 +114,27 @@ export const organizationService = {
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || "Failed to load workspace stats",
+      );
+    }
+  },
+  getOrganizationRoles: async (orgId: string): Promise<OrganizationRole[]> => {
+    try {
+      const response = await api.get(`/api/v1/roles/${orgId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to load roles");
+    }
+  },
+  createCustomRole: async (
+    orgId: string,
+    data: CreateRolePayload,
+  ): Promise<RoleResponse> => {
+    try {
+      const response = await api.post(`/api/v1/role/${orgId}`, data);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to create custom role",
       );
     }
   },

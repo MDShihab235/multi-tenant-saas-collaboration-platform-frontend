@@ -14,7 +14,28 @@ export interface UserProfile {
   jobTitle?: string;
   createdAt: string;
 }
-
+export interface AuthMeResponse {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  status: "ACTIVE" | "SUSPENDED" | "PENDING";
+  needPasswordChange: boolean;
+  memberships: {
+    id: string;
+    role: string;
+    organizationId: string;
+    organization: {
+      name: string;
+      slug: string;
+    };
+  }[];
+  ownedOrganizations: {
+    id: string;
+    name: string;
+    slug: string;
+  }[];
+}
 export const userService = {
   /**
    * GET /api/v1/users/me
@@ -39,6 +60,14 @@ export const userService = {
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Update failed");
+    }
+  },
+  getAuthMe: async (): Promise<AuthMeResponse> => {
+    try {
+      const response = await api.get("/api/v1/auth/me");
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Authentication failed");
     }
   },
 };
