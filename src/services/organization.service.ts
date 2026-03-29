@@ -10,6 +10,49 @@ export interface CreateOrgPayload {
   slug: string; // URL-friendly version of the name
 }
 
+export interface MyOrganization {
+  id: string;
+  name: string;
+  slug: string;
+  _count: {
+    members: number;
+    projects: number;
+  };
+  memberships: {
+    role: string;
+  }[];
+  subscription?: {
+    plan: {
+      name: string;
+    };
+    status: string;
+  };
+}
+
+export interface OrganizationDetail extends MyOrganization {
+  owner: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  roles: {
+    id: string;
+    name: string;
+    permissions: string[];
+  }[];
+}
+export interface OrganizationStats {
+  members: number;
+  projects: number;
+  tasks: number;
+  activeApiKeys: number;
+  subscription: {
+    planName: string;
+    status: string;
+    expiryDate?: string;
+  };
+}
+
 export const organizationService = {
   create: async (data: CreateOrgPayload) => {
     try {
@@ -18,6 +61,36 @@ export const organizationService = {
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || "Failed to create organization",
+      );
+    }
+  },
+  getMyOrganizations: async (): Promise<MyOrganization[]> => {
+    try {
+      const response = await api.get("/api/v1/organization/my");
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to load organizations",
+      );
+    }
+  },
+  getOrganizationById: async (orgId: string): Promise<OrganizationDetail> => {
+    try {
+      const response = await api.get(`/api/v1/organization/${orgId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Unauthorized access to settings",
+      );
+    }
+  },
+  getOrganizationStats: async (orgId: string): Promise<OrganizationStats> => {
+    try {
+      const response = await api.get(`/api/v1/organization/${orgId}/stats`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to load workspace stats",
       );
     }
   },

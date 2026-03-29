@@ -10,11 +10,13 @@ import {
   Zap,
   MessageSquare,
   FolderKanban,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Organizations", href: "/overview", icon: Building2 },
   {
     name: "Create Organization",
     href: "/dashboard/organizations/create",

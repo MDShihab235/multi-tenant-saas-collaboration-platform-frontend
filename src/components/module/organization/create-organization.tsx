@@ -8,7 +8,14 @@ import { organizationService } from "@/services/organization.service";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, Globe, ArrowRight, Loader2, Info } from "lucide-react";
+import {
+  Building2,
+  Globe,
+  ArrowRight,
+  Loader2,
+  Info,
+  CheckCircle2,
+} from "lucide-react";
 import { FieldGroup } from "@/components/ui/field";
 
 export default function CreateOrganization() {
@@ -157,6 +164,16 @@ export default function CreateOrganization() {
                 )}
               </Button>
             </FieldGroup>
+            <div className="mt-8 pt-8 border-t border-dashed space-y-3">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+                <span>Automatic Owner role assignment</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+                <span>Ready-to-use project workflows</span>
+              </div>
+            </div>
           </form>
         </div>
 
