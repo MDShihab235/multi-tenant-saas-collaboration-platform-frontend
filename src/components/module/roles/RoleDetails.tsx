@@ -1,169 +1,166 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  organizationService,
-  OrganizationRole,
-} from "@/services/organization.service";
+import { useRoleData } from "@/hooks/use-role-data";
+import { organizationService } from "@/services/organization.service";
 import { Button } from "@/components/ui/button";
 import {
-  ShieldCheck,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import {
   ChevronLeft,
-  Users,
-  Key,
+  Lock,
   Loader2,
-  Settings2,
+  ShieldCheck,
+  Fingerprint,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function RoleDetailPage() {
-  const { orgSlug, roleId } = useParams();
+  const params = useParams();
   const router = useRouter();
-  const [role, setRole] = useState<OrganizationRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { orgSlug, roleId } = params as { orgSlug: string; roleId: string };
 
-  // Mock: Retrieve orgId from your global store (Zustand)
-  const orgId = "UUID_FROM_STORE";
+  // DATA FLOW: Using the custom hook for clean state management
+  const { role, setRole, loading, error } = useRoleData(orgSlug, roleId);
 
-  useEffect(() => {
-    const fetchRoleDetail = async () => {
-      if (!orgId || !roleId) return;
-      try {
-        const data = await organizationService.getRoleById(
-          orgId,
-          roleId as string,
-        );
-        setRole(data);
-      } catch (error: any) {
-        toast.error("Access Denied", { description: error.message });
-        router.push(`/${orgSlug}/settings/roles`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRoleDetail();
-  }, [orgId, roleId, orgSlug, router]);
+  // ACTION: Revoke Permission with Optimistic Rollback
+  const handleRevoke = async (permId: string) => {
+    if (!role) return;
 
-  if (loading) {
+    const previousPermissions = [...role.permissions];
+
+    // Optimistic Update: Remove UI element immediately
+    setRole({
+      ...role,
+      permissions: role.permissions.filter((p) => p.id !== permId),
+    });
+
+    try {
+      const result = await organizationService.removePermission(
+        role.organizationId,
+        roleId,
+        permId,
+      );
+      toast.success(
+        `Revoked ${result.removedPermission.action} on ${result.removedPermission.resource}`,
+      );
+    } catch (err) {
+      // Rollback: Restore previous state on failure
+      setRole({ ...role, permissions: previousPermissions });
+      toast.error("Failed to sync with server. Permission restored.");
+    }
+  };
+
+  if (loading)
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
-  }
 
-  if (!role) return null;
+  if (error || !role)
+    return (
+      <div className="p-12 text-center space-y-4">
+        <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
+        <p className="text-muted-foreground">
+          We couldn&#39;t find that role or you lack access.
+        </p>
+        <Button variant="outline" onClick={() => router.back()}>
+          Go Back
+        </Button>
+      </div>
+    );
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
-      {/* Navigation Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          onClick={() => router.back()}
-        >
-          <ChevronLeft className="w-5 h-5" />
+    <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
+      <header className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ChevronLeft className="mr-2 h-4 w-4" /> Back to Roles
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            {role.name}
-            {role.isSystemRole && (
-              <span className="text-[10px] bg-muted px-2 py-1 rounded-full text-muted-foreground uppercase tracking-widest">
-                System Role
-              </span>
-            )}
-          </h1>
-          <p className="text-muted-foreground">
-            Manage permissions and view members assigned to this role.
-          </p>
-        </div>
+        <Badge variant="outline" className="font-mono text-[10px]">
+          ROLE_ID: {roleId}
+        </Badge>
+      </header>
+
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <ShieldCheck className="h-8 w-8 text-primary" />
+          {role.name}
+        </h1>
+        <p className="text-muted-foreground">
+          Managing granular permissions for members assigned to this role.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Permission Matrix */}
-        <div className="lg:col-span-2 space-y-6">
-          <section className="bg-card border rounded-3xl p-8 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Key className="w-5 h-5 text-primary" /> Active Permissions
-              </h2>
-              <Button size="sm" variant="outline" className="rounded-xl">
-                <Settings2 className="w-4 h-4 mr-2" /> Edit Permissions
-              </Button>
+      <Card className="border-primary/10">
+        <CardHeader className="bg-muted/30 border-b">
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Lock className="h-5 w-5" /> Active Permissions
+              </CardTitle>
+              <CardDescription>
+                Uncheck a scope to revoke access immediately.
+              </CardDescription>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {role.rolePermissions.length > 0 ? (
-                role.rolePermissions.map((rp) => (
-                  <div
-                    key={rp.permission}
-                    className="flex items-center gap-3 p-4 bg-muted/30 rounded-2xl border border-transparent hover:border-primary/20 transition-colors"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-green-500" />
-                    <span className="text-sm font-mono font-medium">
-                      {rp.permission.toLowerCase().replace("_", ":")}
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none">
+              {role.permissions.length} Scopes Assigned
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {role.permissions.map((perm) => (
+              <div
+                key={perm.id}
+                className="flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
+              >
+                <div className="flex gap-4 items-center">
+                  <div className="p-2 bg-muted rounded-lg">
+                    <Fingerprint className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold capitalize">
+                      {perm.resource}
+                    </span>
+                    <span className="text-xs text-muted-foreground italic">
+                      Can perform {perm.action.toLowerCase()} operations
                     </span>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-2 py-10 text-center border-2 border-dashed rounded-3xl">
-                  <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">
-                    No permissions assigned to this role yet.
-                  </p>
                 </div>
-              )}
-            </div>
-          </section>
-        </div>
 
-        {/* Role Statistics & Members Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-primary/5 border border-primary/20 rounded-3xl p-8">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-6 flex items-center gap-2">
-              <Users className="w-4 h-4" /> Role Impact
-            </h3>
-
-            <div className="space-y-4">
-              <div className="bg-background p-4 rounded-2xl border">
-                <p className="text-2xl font-black">
-                  {role._count?.memberships || 0}
-                </p>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-tighter">
-                  Assigned Members
-                </p>
+                <div className="flex items-center gap-6">
+                  <Badge
+                    variant="outline"
+                    className="font-mono font-bold text-[10px]"
+                  >
+                    {perm.action}
+                  </Badge>
+                  <Checkbox
+                    checked={true}
+                    onCheckedChange={() => handleRevoke(perm.id)}
+                    className="h-5 w-5 border-primary data-[state=checked]:bg-primary"
+                  />
+                </div>
               </div>
+            ))}
 
-              <p className="text-xs text-muted-foreground italic leading-relaxed">
-                Changes to this role will immediately affect all{" "}
-                {role._count?.memberships} members currently assigned to it.
-              </p>
-            </div>
+            {role.permissions.length === 0 && (
+              <div className="p-20 text-center text-muted-foreground">
+                <p>No permissions assigned to this role yet.</p>
+              </div>
+            )}
           </div>
-
-          {!role.isSystemRole && (
-            <div className="p-6 border-2 border-dashed border-destructive/20 rounded-3xl bg-destructive/5">
-              <h4 className="text-destructive font-bold text-sm mb-2">
-                Danger Zone
-              </h4>
-              <p className="text-[11px] text-muted-foreground mb-4">
-                Deleting this role will leave members without defined access.
-              </p>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="w-full rounded-lg"
-              >
-                Delete Role
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

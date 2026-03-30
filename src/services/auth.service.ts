@@ -24,7 +24,14 @@ export interface VerifyEmailPayload {
   email: string;
   otp: string;
 }
-
+export interface Session {
+  id: string;
+  userAgent: string;
+  ipAddress: string;
+  isCurrent: boolean;
+  lastUsedAt: string;
+  deviceType: "mobile" | "desktop" | "tablet" | "unknown";
+}
 export const authService = {
   register: async (data: RegisterPayload) => {
     try {
@@ -69,5 +76,24 @@ export const authService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Logout failed");
     }
+  },
+
+  // Add to authService object
+  getSessions: async (): Promise<Session[]> => {
+    const response = await api.get("/api/v1/auth/session");
+    return response.data.data;
+  },
+
+  revokeSession: async (sessionId: string): Promise<void> => {
+    await api.delete(`/api/v1/auth/session/${sessionId}`);
+  },
+  // Add to authService object
+  revokeAllSessions: async (): Promise<{ count: number }> => {
+    const response = await api.delete("/api/v1/auth/session");
+    return response.data.data;
+  },
+  deleteAccount: async (): Promise<void> => {
+    // This hits the DELETE /api/v1/users/me endpoint
+    await api.delete("/api/v1/user/me");
   },
 };

@@ -14,6 +14,14 @@ export interface UserProfile {
   jobTitle?: string;
   createdAt: string;
 }
+export interface Role {
+  id: string;
+  name: string;
+  organizationId: string;
+  description?: string;
+  permissions: string[]; // Array of permission keys
+  createdAt: string;
+}
 export interface AuthMeResponse {
   id: string;
   name: string;
@@ -35,6 +43,14 @@ export interface AuthMeResponse {
     name: string;
     slug: string;
   }[];
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | undefined;
+  updatedAt: string;
 }
 export const userService = {
   /**
@@ -69,5 +85,41 @@ export const userService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Authentication failed");
     }
+  },
+
+  // Add to userService object
+  updateMe: async (data: {
+    name?: string;
+    image?: string;
+  }): Promise<UserProfile> => {
+    const response = await api.patch("/api/v1/user/me", data);
+    return response.data.data;
+  },
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void> => {
+    // The backend handles session revocation and sets new Set-Cookie headers
+    await api.patch("/api/v1/user/me/change-password", data);
+  },
+
+  // Add to roleService object
+  updateRole: async (
+    orgId: string,
+    roleId: string,
+    name: string,
+  ): Promise<Role> => {
+    const response = await api.patch(`/api/v1/role/${orgId}/${roleId}`, {
+      name,
+    });
+    return response.data.data;
+  },
+  // Add this interface if not already defined
+
+  // Add to userService object
+  getRoles: async (orgId: string): Promise<Role[]> => {
+    // GET /api/v1/roles/:orgId
+    const response = await api.get(`/api/v1/role/${orgId}`);
+    return response.data.data;
   },
 };

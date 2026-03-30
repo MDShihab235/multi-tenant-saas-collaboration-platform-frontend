@@ -1,10 +1,10 @@
-import CreatePlan from "@/components/module/plan/plans";
+import AdminPlansPage from "@/components/module/admin/AdminPlans";
 import React from "react";
 
 const page = () => {
   return (
     <div>
-      <CreatePlan />
+      <AdminPlansPage />
     </div>
   );
 };

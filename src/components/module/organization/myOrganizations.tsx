@@ -13,6 +13,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function MyOrganization() {
   // Renamed to avoid conflict with Type
@@ -32,7 +33,7 @@ export default function MyOrganization() {
     };
     initDashboard();
   }, []);
-
+  const router = useRouter();
   if (loading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
@@ -87,10 +88,14 @@ export default function MyOrganization() {
           const planName = org.subscription?.plan?.name;
           const displayPlan = typeof planName === "string" ? planName : null;
 
+          const handleCardClick = () => {
+            router.push(`/${org.slug}/settings`);
+          };
+
           return (
-            <Link
+            <div
               key={org.id}
-              href={`/${org.slug}/settings`}
+              onClick={handleCardClick}
               className="group block p-6 bg-card border rounded-3xl hover:border-primary/50 transition-all hover:shadow-lg"
             >
               <div className="flex items-start justify-between mb-4">
@@ -134,7 +139,7 @@ export default function MyOrganization() {
                   </div>
                 )}
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

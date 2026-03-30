@@ -54,6 +54,7 @@ export interface OrganizationStats {
 }
 
 export interface OrganizationRole {
+  organizationId: string;
   id: string;
   name: string;
   description?: string;
@@ -88,7 +89,88 @@ export interface RolePermissionDetail {
   }[];
   total: number;
 }
+export interface Permission {
+  id: string;
+  action: string;
+  resource: string;
+}
+export interface PermissionImpactDetail {
+  id: string;
+  action: string;
+  resource: string;
+  rolePermissions: {
+    role: {
+      name: string;
+      organization: {
+        name: string;
+        slug: string;
+      };
+    };
+  }[];
+  _count: {
+    rolePermissions: number;
+  };
+}
 
+export interface Membership {
+  id: string;
+  roleId: string;
+  userId: string;
+  user: {
+    name: string;
+    email: string;
+    image?: string;
+  };
+  role: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+}
+
+export interface InvitePayload {
+  email: string;
+  roleId: string;
+  expiresInDays?: number;
+}
+
+export interface InvitationResponse {
+  id: string;
+  email: string;
+  role: { name: string };
+  organization: { name: string };
+  expiresAt: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED";
+}
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: {
+    name: string;
+  };
+  expiresAt: string;
+  createdAt: string;
+  status: "PENDING" | "EXPIRED";
+}
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  ownerId: string;
+  createdAt: string;
+}
+export interface Permission {
+  id: string;
+  action: string;
+  resource: string;
+}
+
+export interface RoleDetail extends OrganizationRole {
+  permissions: Permission[];
+  _count: {
+    memberships: number;
+  };
+}
 export const organizationService = {
   create: async (data: CreateOrgPayload) => {
     try {
@@ -176,5 +258,155 @@ export const organizationService = {
         error.response?.data?.message || "Failed to load role permissions",
       );
     }
+  },
+  createGlobalPermission: async (data: {
+    action: string;
+    resource: string;
+  }): Promise<Permission> => {
+    try {
+      const response = await api.post("/api/v1/permission", data);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to create global permission",
+      );
+    }
+  },
+  getPermissionImpact: async (
+    permId: string,
+  ): Promise<PermissionImpactDetail> => {
+    try {
+      const response = await api.get(`/api/v1/permission/${permId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch permission impact",
+      );
+    }
+  },
+  getMemberships: async (orgId: string): Promise<Membership[]> => {
+    try {
+      const response = await api.get(`/api/v1/membership/${orgId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to load members",
+      );
+    }
+  },
+  sendInvitation: async (
+    orgId: string,
+    data: InvitePayload,
+  ): Promise<InvitationResponse> => {
+    try {
+      const response = await api.post(`/api/v1/invitation/${orgId}`, data);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to send invitation",
+      );
+    }
+  },
+  getPendingInvitations: async (
+    orgId: string,
+  ): Promise<PendingInvitation[]> => {
+    try {
+      const response = await api.get(`/api/v1/invitation/${orgId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to load pending invitations",
+      );
+    }
+  },
+  getMembershipDetail: async (
+    orgId: string,
+    userId: string,
+  ): Promise<Membership> => {
+    try {
+      const response = await api.get(`/api/v1/membership/${orgId}/${userId}`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to load member details",
+      );
+    }
+  },
+  updateMemberRole: async (
+    orgId: string,
+    userId: string,
+    roleId: string,
+  ): Promise<Membership> => {
+    try {
+      const response = await api.patch(
+        `/api/v1/membership/${orgId}/${userId}/role`,
+        { roleId },
+      );
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to update member role",
+      );
+    }
+  },
+  revokeInvitation: async (invitationId: string): Promise<void> => {
+    try {
+      await api.delete(`/api/v1/invitation/${invitationId}/revoke`);
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Failed to revoke invitation",
+      );
+    }
+  },
+
+  // Add to organizationService object
+  updateOrganization: async (
+    orgId: string,
+    data: { name?: string; slug?: string },
+  ): Promise<Organization> => {
+    const response = await api.patch(`/api/v1/organization/${orgId}`, data);
+    return response.data.data;
+  },
+  deleteOrganization: async (orgId: string): Promise<void> => {
+    await api.delete(`/api/v1/organization/${orgId}`);
+  },
+  getOrganizationBySlug: async (slug: string): Promise<Organization> => {
+    const response = await api.get(`/api/v1/organization/slug/${slug}`);
+    return response.data.data;
+  },
+  // Add to membershipService object
+  leaveOrganization: async (orgId: string): Promise<void> => {
+    // DELETE /api/v1/memberships/:orgId/leave
+    await api.delete(`/api/v1/membership/${orgId}/leave`);
+  },
+  removeMember: async (orgId: string, userId: string): Promise<void> => {
+    // DELETE /api/v1/memberships/:orgId/:userId
+    await api.delete(`/api/v1/membership/${orgId}/${userId}`);
+  },
+  deleteRole: async (orgId: string, roleId: string): Promise<void> => {
+    // DELETE /api/v1/roles/:orgId/:roleId
+    await api.delete(`/api/v1/role/${orgId}/${roleId}`);
+  },
+  removePermission: async (
+    orgId: string,
+    roleId: string,
+    permId: string,
+  ): Promise<{ removedPermission: any }> => {
+    const response = await api.delete(
+      `/api/v1/permission/${orgId}/${roleId}/${permId}`,
+    );
+    return response.data.data;
+  },
+
+  // Add to organizationService object
+  getRoleDetails: async (
+    orgSlug: string,
+    roleId: string,
+  ): Promise<RoleDetail> => {
+    // GET /api/v1/organizations/:orgSlug/roles/:roleId
+    const response = await api.get(
+      `/api/v1/organization/${orgSlug}/role/${roleId}`,
+    );
+    return response.data.data;
   },
 };

@@ -1,176 +1,193 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
   organizationService,
-  OrganizationDetail,
+  Organization,
 } from "@/services/organization.service";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Settings2,
-  ShieldCheck,
-  Users2,
-  CreditCard,
-  Crown,
-  Loader2,
+  Globe,
   AlertTriangle,
+  Loader2,
+  CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function OrganizationSettings() {
-  const { orgSlug } = useParams();
+export default function OrganizationGeneralSettings() {
   const router = useRouter();
-  const [org, setOrg] = useState<OrganizationDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const params = useParams();
+  const currentSlug = params.orgSlug as string;
 
-  // Note: In a real app, retrieve the numeric/UUID orgId
-  // from your Zustand store/Context mapped by the orgSlug.
-  const orgId = org?.id;
+  const [org, setOrg] = useState<Organization | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    slug: "",
+  });
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      if (!orgId) return;
+    const fetchOrg = async () => {
       try {
-        const data = await organizationService.getOrganizationById(orgId);
+        // Assuming you have a way to get the current org by slug or from a store
+        const data =
+          await organizationService.getOrganizationBySlug(currentSlug);
         setOrg(data);
-      } catch (error: any) {
-        toast.error("Access Denied", { description: error.message });
-        router.push("/dashboard");
+        setFormData({ name: data.name, slug: data.slug });
+      } catch (err) {
+        toast.error("Failed to load organization settings.");
       } finally {
         setLoading(false);
       }
     };
-    fetchSettings();
-  }, [orgId, router]);
+    fetchOrg();
+  }, [currentSlug]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!org) return;
+
+    const slugChanged = formData.slug !== org.slug;
+    setIsSaving(true);
+
+    try {
+      const updated = await organizationService.updateOrganization(
+        org.id,
+        formData,
+      );
+
+      toast.success("Organization updated successfully.");
+
+      // DATA FLOW: If slug changed, redirect to the new URL path immediately
+      if (slugChanged) {
+        toast.info(`Redirecting to /${updated.slug}...`);
+        router.push(`/${updated.slug}/settings`);
+        router.refresh();
+      } else {
+        setOrg(updated);
+        setIsSaving(false);
+      }
+
+      // Optional: Trigger a global refetch of the user's organization list
+      window.dispatchEvent(new CustomEvent("org-list-updated"));
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Slug might already be taken.";
+      toast.error(msg);
+      setIsSaving(false);
+    }
+  };
 
   if (loading)
     return (
-      <div className="p-10 flex justify-center">
-        <Loader2 className="animate-spin text-primary" />
+      <div className="p-12 text-center text-muted-foreground">
+        Loading organization...
       </div>
     );
-  if (!org) return null;
 
   return (
-    <div className="max-w-5xl mx-auto p-8 space-y-10">
-      <div className="flex items-center justify-between border-b pb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Organization Settings
-          </h1>
-          <p className="text-muted-foreground italic">
-            Managing workspace: {org.name}
-          </p>
-        </div>
-        <div className="bg-primary/10 p-3 rounded-2xl ring-1 ring-primary/20">
-          <Settings2 className="w-6 h-6 text-primary" />
-        </div>
+    <div className="max-w-3xl space-y-8 animate-in fade-in duration-500">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">General Settings</h1>
+        <p className="text-muted-foreground">
+          Manage your organization identity and public presence.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Profile & Ownership Section */}
-        <div className="md:col-span-2 space-y-6">
-          <section className="bg-card border rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-primary" /> General
-              Information
-            </h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase">
-                    Owner
-                  </label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Crown className="w-4 h-4 text-yellow-500" />
-                    <span className="font-medium text-sm">
-                      {org.owner.name}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase">
-                    Member Count
-                  </label>
-                  <div className="flex items-center gap-2 mt-1 text-sm font-medium">
-                    <Users2 className="w-4 h-4 text-primary" />{" "}
-                    {org._count.members} Members
-                  </div>
+      <form onSubmit={handleSubmit}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              Identity
+            </CardTitle>
+            <CardDescription>
+              Update your workspace name and unique URL identifier.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Organization Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Organization Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="Acme Corp"
+                required
+              />
+            </div>
+
+            {/* Organization Slug */}
+            <div className="space-y-2">
+              <Label htmlFor="slug">Workspace Slug (URL)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">
+                  app.yoursite.com/
+                </span>
+                <Input
+                  id="slug"
+                  value={formData.slug}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      slug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                    })
+                  }
+                  className="pl-[115px] font-mono text-sm"
+                  placeholder="acme-corp"
+                  required
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Only lowercase letters, numbers, and hyphens allowed.
+              </p>
+            </div>
+
+            {/* Slug Change Warning */}
+            {formData.slug !== org?.slug && (
+              <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                <div className="text-xs space-y-1">
+                  <p className="font-bold">Warning: URL Change Detected</p>
+                  <p>
+                    Changing the slug will break all existing links to this
+                    workspace. You will be redirected to the new URL
+                    immediately.
+                  </p>
                 </div>
               </div>
-            </div>
-          </section>
+            )}
 
-          {/* Roles Configuration */}
-          <section className="bg-card border rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold mb-4">Roles & Permissions</h2>
-            <div className="space-y-3">
-              {org.roles.map((role) => (
-                <div
-                  key={role.id}
-                  className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border/50"
-                >
-                  <span className="font-semibold text-sm">{role.name}</span>
-                  <div className="flex gap-1">
-                    {role.permissions.slice(0, 2).map((p) => (
-                      <span
-                        key={p}
-                        className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase"
-                      >
-                        {p.replace("_", " ")}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="flex justify-end pt-4">
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                Save Changes
+              </Button>
             </div>
-          </section>
-        </div>
-
-        {/* Sidebar: Subscription Status */}
-        <div className="md:col-span-1">
-          <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 sticky top-24">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-              <CreditCard className="w-4 h-4" /> Subscription
-            </h3>
-            <div className="mb-6">
-              <p className="text-2xl font-black">
-                {org.subscription?.plan?.name || "Free Tier"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Status:{" "}
-                <span className="text-green-500 font-bold uppercase">
-                  {org.subscription?.status || "Active"}
-                </span>
-              </p>
-            </div>
-            <Button
-              className="w-full rounded-xl shadow-lg shadow-primary/10"
-              variant="default"
-            >
-              Manage Billing
-            </Button>
-          </div>
-
-          <div className="mt-6 p-6 border-2 border-dashed border-destructive/20 rounded-3xl bg-destructive/5">
-            <h4 className="text-destructive font-bold text-sm flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4" /> Danger Zone
-            </h4>
-            <p className="text-[11px] text-muted-foreground mb-4">
-              Deleting this organization will permanently remove all projects
-              and data.
-            </p>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="w-full rounded-lg"
-            >
-              Delete Workspace
-            </Button>
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
+      </form>
     </div>
   );
 }
