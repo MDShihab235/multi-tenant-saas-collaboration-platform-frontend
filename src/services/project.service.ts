@@ -125,11 +125,6 @@ export interface Attachment {
   createdAt: string;
 }
 
-export interface TaskDetail extends Task {
-  description: string | null;
-  comments: Comment[];
-  attachments: Attachment[];
-}
 export type TaskStatus =
   | "TODO"
   | "IN_PROGRESS"
@@ -201,6 +196,7 @@ export interface TaskDetail {
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   projectId: string;
   assigneeId?: string;
+  dueDate?: string | null;
   assignee?: {
     id: string;
     name: string;
@@ -213,6 +209,10 @@ export interface TaskDetail {
   }>;
   createdAt: string;
   updatedAt: string;
+  _count: {
+    comments: number;
+    attachments: number;
+  };
 }
 export const projectService = {
   /**
@@ -229,6 +229,7 @@ export const projectService = {
       const response = await api.get(`/api/v1/project/${orgId}`, {
         params: { page, limit, search },
       });
+      console.log("From getProjects:", response);
       return response.data.data;
     } catch (error: any) {
       throw new Error(
@@ -238,7 +239,7 @@ export const projectService = {
   },
   getMyProjects: async (): Promise<MyProject[]> => {
     try {
-      const response = await api.get("/api/v1/project/my");
+      const response = await api.get("/api/v1/project/my-projects");
       return response.data.data;
     } catch (error: any) {
       throw new Error(
@@ -247,11 +248,11 @@ export const projectService = {
     }
   },
   createProject: async (
-    orgId: string,
+    orgSlug: string,
     payload: { name: string; description?: string },
   ): Promise<Project> => {
     try {
-      const response = await api.post(`/api/v1/project/${orgId}`, payload);
+      const response = await api.post(`/api/v1/project/${orgSlug}`, payload);
       return response.data.data;
     } catch (error: any) {
       throw new Error(
@@ -589,7 +590,7 @@ export const projectService = {
     projectId: string,
     userId: string,
     role: string,
-  ): Promise<any> => {
+  ): Promise<ProjectMember> => {
     // PATCH /api/v1/project-members/:projectId/:userId
     const response = await api.patch(
       `/api/v1/project-member/${projectId}/${userId}`,
@@ -624,7 +625,7 @@ export const projectService = {
   ): Promise<TaskDetail> => {
     // GET /api/v1/projects/${projectSlug}/tasks/${taskId}
     const response = await api.get(
-      `/api/v1/project/${projectSlug}/tasks/${taskId}`,
+      `/api/v1/project/${projectSlug}/task/${taskId}`,
     );
     return response.data.data;
   },

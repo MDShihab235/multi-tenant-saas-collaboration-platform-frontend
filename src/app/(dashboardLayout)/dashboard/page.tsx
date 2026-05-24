@@ -42,7 +42,7 @@ const Dashboard = () => {
                 Direct links to your ongoing work.
               </p>
             </div>
-            <MyProjectsWidget />
+            {/* <MyProjectsWidget /> */}
           </section>
 
           {/* Optional: Add a 'Quick Actions' card here later */}

@@ -1,18 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ModeToggle } from "./ModeToggle";
 import { Button } from "@/components/ui/button";
-import {
-  Zap,
-  Menu,
-  User,
-  Settings,
-  LogOut,
-  LayoutDashboard,
-} from "lucide-react";
+import { Zap, Menu, LogOut, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -26,54 +19,53 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logout } from "../module/authentication/logout";
 import { notificationService } from "@/services/notification.service";
-import { NotificationPanel } from "@/components/module/notification/NotificationPanel"; // New Component
+import { NotificationPanel } from "@/components/module/notification/NotificationPanel";
+import { authClient } from "@/lib/auth-client"; // 👈 Ensure this path matches your project
 
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Features", href: "#features" },
-  { name: "Pricing", href: "#pricing" },
+  { name: "Pricing", href: "/pricing" },
   { name: "About", href: "/about" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
 
-  // Auth State
-  const [user, setUser] = useState<{
-    name: string;
-    email: string;
-    image?: string;
-  } | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  // --- AUTH STATE (DYNAMIC) ---
+  const { data: session, isPending: isAuthLoading } = authClient.useSession();
+  const user = session?.user;
 
-  // --- 1. LIGHTWEIGHT COUNT POLLING ---
-  const syncCount = useCallback(async () => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loginChecked, setLoginChecked] = useState(false);
+
+  // --- 1. RESILIENT NOTIFICATION SYNC ---
+  useEffect(() => {
+    // 1. Do nothing if there is no user
     if (!user) return;
-    try {
-      const count = await notificationService.getUnreadCount();
-      setUnreadCount(count);
-    } catch (err) {
-      console.error("Signal lost: Notification sync failed.");
-    }
+
+    // 2. Define the async fetch function inside the effect
+    const fetchUnreadCount = async () => {
+      try {
+        const count = await notificationService.getUnreadCount();
+        setUnreadCount(count);
+      } catch (err) {
+        console.warn("Notifications temporarily unavailable.");
+      }
+    };
+
+    // 3. Initial fetch on mount
+    fetchUnreadCount();
+
+    // 4. Set up the polling interval
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    // 5. Cleanup the interval when the component unmounts
+    return () => clearInterval(interval);
   }, [user]);
 
-  useEffect(() => {
-    // Mocking session - Replace with your actual useAuth() hook logic
-    const session = { name: "John Doe", email: "john@example.com" };
-    setUser(session);
-    setIsLoading(false);
-
-    if (session) {
-      syncCount();
-      const interval = setInterval(syncCount, 30000); // 30s lightweight check
-      return () => clearInterval(interval);
-    }
-  }, [syncCount]);
-
-  // --- 2. OPTIMISTIC CLEAR ---
   const handleNotificationsRead = () => {
-    setUnreadCount(0); // Instantly clear badge on panel interaction
+    setUnreadCount(0);
   };
 
   return (
@@ -109,18 +101,16 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           <ModeToggle />
 
-          {/* DESKTOP AUTHENTICATED UI */}
           <div className="hidden md:flex items-center gap-3">
-            {!isLoading &&
+            {/* Show nothing or a skeleton while checking auth */}
+            {!isAuthLoading &&
               (user ? (
                 <>
-                  {/* LIVE NOTIFICATION PANEL */}
                   <NotificationPanel
                     unreadCount={unreadCount}
                     onReadOne={handleNotificationsRead}
                   />
 
-                  {/* PROFILE DROPDOWN */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -128,9 +118,9 @@ export default function Navbar() {
                         className="relative h-9 w-9 rounded-full border border-primary/10 p-0"
                       >
                         <Avatar className="h-full w-full">
-                          <AvatarImage src={user.image} alt={user.name} />
+                          <AvatarImage src={user.image || ""} alt={user.name} />
                           <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                            {user.name.charAt(0)}
+                            {user.name?.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                       </Button>
@@ -168,17 +158,25 @@ export default function Navbar() {
                   </DropdownMenu>
                 </>
               ) : (
+                // 🔐 LOGIN / REGISTER BUTTONS
                 <>
                   <Link href="/login">
                     <Button variant="ghost" size="sm" className="font-semibold">
-                      Log in
+                      Sign In
                     </Button>
                   </Link>
                   <Link href="/register">
-                    <Button size="sm" className="rounded-full px-6 font-bold">
-                      Get Started
+                    <Button
+                      size="sm"
+                      className="rounded-full px-6 font-bold shadow-md shadow-primary/20"
+                    >
+                      Sign Up
                     </Button>
                   </Link>
+
+                  <div>
+                    <Logout />
+                  </div>
                 </>
               ))}
           </div>
@@ -213,14 +211,21 @@ export default function Navbar() {
                         </Button>
                       </Link>
                     ) : (
-                      <Link href="/login" className="w-full">
-                        <Button
-                          variant="outline"
-                          className="w-full h-12 rounded-2xl"
-                        >
-                          Log in
-                        </Button>
-                      </Link>
+                      <>
+                        <Link href="/login" className="w-full">
+                          <Button
+                            variant="outline"
+                            className="w-full h-12 rounded-2xl"
+                          >
+                            Log In
+                          </Button>
+                        </Link>
+                        <Link href="/register" className="w-full">
+                          <Button className="w-full h-12 rounded-2xl">
+                            Sign Up
+                          </Button>
+                        </Link>
+                      </>
                     )}
                   </div>
                 </nav>

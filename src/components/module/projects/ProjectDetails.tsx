@@ -8,7 +8,6 @@ import {
   ProjectStats,
 } from "@/services/project.service";
 import {
-  LayoutGrid,
   ArrowLeft,
   Loader2,
   Calendar,
@@ -32,9 +31,9 @@ import { CreateTaskModal } from "@/components/module/projects/CreateTaskModal";
 import { KanbanBoard } from "@/components/module/projects/KanbanBoard";
 
 export default function ProjectDetailPage() {
-  const { orgSlug, projectId } = useParams();
+  const { orgslug, projectId } = useParams();
   const router = useRouter();
-
+  console.log(orgslug, "\n", "Project ID: ", projectId);
   // State Management
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [stats, setStats] = useState<ProjectStats | null>(null);
@@ -44,8 +43,8 @@ export default function ProjectDetailPage() {
   const [refreshKey, setRefreshKey] = useState(0); // Used to force-refresh the KanbanBoard
 
   // Context Mock - In production, use your useOrg() or Auth context
-  const orgId = "ACTUAL_ORG_ID_FROM_CONTEXT";
-
+  const orgId = project?.organizationId || "mock-org-id"; // Replace with actual org ID retrieval logic
+  console.log("Derived Org ID:", orgId);
   const fetchData = useCallback(async () => {
     if (!orgId || !projectId) return;
     try {
@@ -58,11 +57,11 @@ export default function ProjectDetailPage() {
       setRefreshKey((prev) => prev + 1); // Trigger Kanban reload
     } catch (error: any) {
       toast.error("Project Error", { description: error.message });
-      router.push(`/${orgSlug}/projects`);
+      router.push(`/${orgslug}/projects`);
     } finally {
       setLoading(false);
     }
-  }, [orgId, projectId, orgSlug, router]);
+  }, [orgId, projectId, orgslug, router]);
 
   useEffect(() => {
     fetchData();
@@ -85,12 +84,12 @@ export default function ProjectDetailPage() {
   if (!project || !stats) return null;
 
   return (
-    <div className="p-6 md:p-10 max-w-[1600px] mx-auto space-y-10">
+    <div className="p-6 md:p-10 max-w-400 mx-auto space-y-10">
       {/* 1. Header & Navigation */}
       <div className="flex flex-col gap-6">
         <Button
           variant="ghost"
-          onClick={() => router.push(`/${orgSlug}/projects`)}
+          onClick={() => router.push(`/${orgslug}/projects`)}
           className="w-fit -ml-3 text-muted-foreground hover:text-foreground rounded-xl"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
@@ -160,19 +159,19 @@ export default function ProjectDetailPage() {
           <TabsList className="bg-transparent h-auto p-0 gap-10">
             <TabsTrigger
               value="tasks"
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-[4px] data-[state=active]:border-primary rounded-none px-0 pb-4 font-black text-sm uppercase tracking-widest transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-4 font-black text-sm uppercase tracking-widest transition-all"
             >
               Kanban Board
             </TabsTrigger>
             <TabsTrigger
               value="members"
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-[4px] data-[state=active]:border-primary rounded-none px-0 pb-4 font-black text-sm uppercase tracking-widest transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-4 font-black text-sm uppercase tracking-widest transition-all"
             >
               Team Roster
             </TabsTrigger>
             <TabsTrigger
               value="settings"
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-[4px] data-[state=active]:border-primary rounded-none px-0 pb-4 font-black text-sm uppercase tracking-widest transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-4 font-black text-sm uppercase tracking-widest transition-all"
             >
               Settings
             </TabsTrigger>

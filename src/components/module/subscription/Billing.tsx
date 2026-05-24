@@ -8,26 +8,18 @@ import {
   BillingCycle,
 } from "@/services/subscription.service";
 import {
-  CreditCard,
   Clock,
-  AlertTriangle,
   RefreshCw,
-  CheckCircle2,
   Receipt,
   ExternalLink,
-  Calendar,
   Users,
   Layers,
   CheckSquare,
   TrendingUp,
-  ArrowUpRight,
-  ShieldAlert,
   Zap,
   PlayCircle,
   StopCircle,
   ArrowRightLeft,
-  Percent,
-  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,8 +45,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { formatDistanceToNow, format } from "date-fns";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useParams } from "next/navigation";
 
 export default function BillingPage() {
   // --- STATE ---
@@ -65,15 +58,18 @@ export default function BillingPage() {
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [pendingCycle, setPendingCycle] = useState<BillingCycle>("MONTHLY");
 
-  const orgId = "org_12345"; // Context-driven
+  console.log("Subscription: ", subscription);
+  console.log("Usage: ", usage);
+
+  const { orgId } = useParams(); // Context-driven
 
   // --- DATA SYNC ---
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [subData, usageData] = await Promise.all([
-        subscriptionService.getSubscription(orgId),
-        subscriptionService.getUsage(orgId),
+        subscriptionService.getSubscription(orgId as string),
+        subscriptionService.getUsage(orgId as string),
       ]);
       setSubscription(subData);
       setUsage(usageData);
@@ -110,7 +106,9 @@ export default function BillingPage() {
     setIsActionPending(true);
 
     try {
-      const updatedSub = await subscriptionService.cancelSubscription(orgId);
+      const updatedSub = await subscriptionService.cancelSubscription(
+        orgId as string,
+      );
 
       // Update local state so the Reactivation Banner appears and
       // the Danger Zone button disappears immediately.
@@ -215,7 +213,8 @@ export default function BillingPage() {
             disabled={isActionPending}
             onClick={() =>
               handleUpdate(
-                () => subscriptionService.reactivateSubscription(orgId),
+                () =>
+                  subscriptionService.reactivateSubscription(orgId as string),
                 "Plan Restored",
               )
             }
@@ -246,9 +245,14 @@ export default function BillingPage() {
               { label: "Projects", icon: Layers, data: usage.projects },
               { label: "Tasks", icon: CheckSquare, data: usage.tasks },
             ].map((m) => {
-              const perc = m.data.limit
-                ? (m.data.used / m.data.limit) * 100
-                : 0;
+              if (!m.data) return null;
+
+              const used = m.data.used || 0;
+              const limit = m.data.limit;
+              const perc = limit ? (used / limit) * 100 : 0;
+              // const perc = m.data.limit
+              //   ? (m.data.used / m.data.limit) * 100
+              //   : 0;
               return (
                 <div
                   key={m.label}
@@ -294,45 +298,66 @@ export default function BillingPage() {
             </h3>
           </div>
           <div className="bg-card border-2 border-muted rounded-[2.5rem] overflow-hidden">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b-2 border-muted bg-muted/20 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                  <th className="px-8 py-5">Date</th>
-                  <th className="px-8 py-5">Amount</th>
-                  <th className="px-8 py-5">Status</th>
-                  <th className="px-8 py-5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y border-muted">
-                {subscription.invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-muted/5">
-                    <td className="px-8 py-6 text-xs font-bold uppercase italic">
-                      {format(new Date(inv.createdAt), "MMM dd, yyyy")}
-                    </td>
-                    <td className="px-8 py-6 font-black italic text-lg">
-                      ${(inv.amount / 100).toFixed(2)}
-                    </td>
-                    <td className="px-8 py-6">
-                      <Badge className="rounded-lg text-[8px] font-black tracking-widest uppercase">
-                        {inv.status}
-                      </Badge>
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        asChild
-                        className="rounded-xl"
-                      >
-                        <a href={inv.hostedInvoiceUrl} target="_blank">
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </Button>
-                    </td>
+            {/* SAFE GUARD CHECK: Ensure invoices exists and has items */}
+            {!subscription.invoices || subscription.invoices.length === 0 ? (
+              <div className="p-12 text-center text-sm font-bold uppercase tracking-wider text-muted-foreground italic">
+                No transaction history available on this account.
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b-2 border-muted bg-muted/20 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                    <th className="px-8 py-5">Date</th>
+                    <th className="px-8 py-5">Amount</th>
+                    <th className="px-8 py-5">Status</th>
+                    <th className="px-8 py-5 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y border-muted">
+                  {/* Added optional chaining and empty-array fallback */}
+                  {(subscription.invoices ?? []).map((inv) => {
+                    return (
+                      <tr key={inv.id} className="hover:bg-muted/5">
+                        <td className="px-8 py-6 text-xs font-bold uppercase italic">
+                          {format(new Date(inv.createdAt), "MMM dd, yyyy")}
+                        </td>
+                        {/* Notice: Changed inv.amount to inv.amountPaid to align with standard invoice models */}
+                        <td className="px-8 py-6 font-black italic text-lg">
+                          ${Number(inv.amountPaid || 0).toFixed(2)}
+                        </td>
+                        <td className="px-8 py-6">
+                          <Badge className="rounded-lg text-[8px] font-black tracking-widest uppercase">
+                            {inv.status}
+                          </Badge>
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          {inv.hostedInvoiceUrl ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              asChild
+                              className="rounded-xl"
+                            >
+                              <a
+                                href={inv.hostedInvoiceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground px-3">
+                              —
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -340,7 +365,7 @@ export default function BillingPage() {
       {/* 5. DANGER ZONE (TERMINATION) */}
       {subscription && !subscription.cancelAtPeriodEnd && (
         <div className="pt-12 border-t-4 border-muted">
-          <div className="p-10 rounded-[3rem] border-4 border-destructive/10 bg-destructive/[0.02] flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="p-10 rounded-[3rem] border-4 border-destructive/10 bg-destructive/2 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="space-y-1 text-center md:text-left">
               <h4 className="text-2xl font-black uppercase italic tracking-tighter text-destructive">
                 Danger Zone
@@ -420,7 +445,10 @@ export default function BillingPage() {
               onClick={() =>
                 handleUpdate(
                   () =>
-                    subscriptionService.updateBillingCycle(orgId, pendingCycle),
+                    subscriptionService.updateBillingCycle(
+                      orgId as string,
+                      pendingCycle,
+                    ),
                   "Cadence Shifted",
                 )
               }

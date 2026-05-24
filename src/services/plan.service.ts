@@ -8,7 +8,10 @@ const api = axios.create({
 export interface PlanFeature {
   id: string;
   name: string;
-  isAvailable: boolean;
+  featureCode: string;
+  limitValue: number;
+  isEnabled: boolean;
+  planId: string;
 }
 
 export interface Plan {
@@ -16,6 +19,7 @@ export interface Plan {
   name: string;
   description: string;
   price: number;
+  slug: string;
   priceMonthly: number;
   priceYearly: number;
   interval: "month" | "year";
@@ -74,4 +78,19 @@ export const planService = {
       );
     }
   },
+  addPlanFeature: async (
+    planId: string,
+    payload: any,
+  ): Promise<PlanFeature> => {
+    const response = await api.post(`/plans/${planId}/features`, payload);
+    return response.data.data;
+  },
+
+  removePlanFeature: async (
+    planId: string,
+    featureId: string,
+  ): Promise<void> => {
+    await api.delete(`/plans/${planId}/features/${featureId}`);
+  },
+  // Add this to your planService object in plan.service.ts
 };

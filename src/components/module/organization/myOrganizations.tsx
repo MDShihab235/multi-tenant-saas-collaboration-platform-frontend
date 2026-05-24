@@ -89,14 +89,14 @@ export default function MyOrganization() {
           const displayPlan = typeof planName === "string" ? planName : null;
 
           const handleCardClick = () => {
-            router.push(`/${org.slug}/settings`);
+            router.push(`/${org.id}/overview`);
           };
 
           return (
             <div
               key={org.id}
               onClick={handleCardClick}
-              className="group block p-6 bg-card border rounded-3xl hover:border-primary/50 transition-all hover:shadow-lg"
+              className="group block p-6 bg-card border rounded-3xl hover:border-primary/50 transition-all hover:shadow-lg max-w-fit cursor-pointer max-h-fit"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="bg-primary/10 p-3 rounded-2xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -112,32 +112,40 @@ export default function MyOrganization() {
                 /{org.slug}
               </p>
 
-              <div className="flex items-center gap-4 border-t pt-4">
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Users className="w-4 h-4" />
-                  <span>{Number(org._count?.members || 0)}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <FolderKanban className="w-4 h-4" />
-                  <span>{Number(org._count?.projects || 0)}</span>
-                </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
-                >
-                  <Link href={`/${org.slug}/overview`}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Overview
-                  </Link>
-                </Button>
-
-                {displayPlan && (
-                  <div className="ml-auto text-[10px] font-bold text-primary">
-                    {displayPlan}
+              <div className="flex flex-col items-center gap-4 border-t pt-4 ">
+                <div className="flex gap-2 items-start">
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Users className="w-4 h-4" />
+                    <span>{Number(org._count?.members || 0)}</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <FolderKanban className="w-4 h-4" />
+                    <span>{Number(org._count?.projects || 0)}</span>
+                  </div>
+                </div>
+                <div>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    <Link href={`/${org.id}/overview`}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Overview
+                    </Link>
+                  </Button>
+
+                  {displayPlan ? (
+                    <div className="ml-auto text-[10px] font-bold text-primary">
+                      {displayPlan}
+                    </div>
+                  ) : (
+                    <div className="ml-auto text-[10px] font-bold text-primary">
+                      Plan
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );

@@ -33,7 +33,7 @@ export const notificationService = {
     unreadCount: number;
   }> => {
     const response = await api.get("/api/v1/notification/unread");
-    return response.data;
+    return response.data.data;
   },
 
   /**
@@ -51,7 +51,7 @@ export const notificationService = {
       const response = await api.get(
         `/api/v1/notification?page=${page}&limit=${limit}`,
       );
-      return response.data;
+      return response.data.data;
     } catch (error) {
       throw new Error("Could not retrieve notification history.");
     }

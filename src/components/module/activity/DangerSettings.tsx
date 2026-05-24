@@ -77,7 +77,7 @@ export default function OrgDangerZonePage() {
   const handleLeave = async () => {
     setIsPending(true);
     try {
-      await membershipService.leaveOrganization(org!.id);
+      await organizationService.leaveOrganization(org!.id);
       toast.success(`You have left ${org?.name}.`);
       router.push("/dashboard");
       router.refresh();

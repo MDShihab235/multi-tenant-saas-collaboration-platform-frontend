@@ -13,24 +13,31 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CreditCard, Clock, Settings2 } from "lucide-react";
+import {
+  Plus,
+  Clock,
+  Settings2,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  Hash,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -39,7 +46,14 @@ export default function AdminPlansPage() {
     currency: "USD",
     trialDays: 14,
   });
-
+  // Feature Dialog State
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [featureFormData, setFeatureFormData] = useState({
+    name: "",
+    featureCode: "",
+    limitValue: 0,
+    isEnabled: true,
+  });
   const fetchPlans = async () => {
     try {
       const data = await adminService.getPlans();
@@ -55,12 +69,14 @@ export default function AdminPlansPage() {
     fetchPlans();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  // --- Plan Handlers ---
+  const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
+    // ... existing plan creation logic
     try {
       const newPlan = await adminService.createPlan(formData);
       setPlans((prev) => [...prev, newPlan]);
-      setOpen(false);
+      setCreateOpen(false);
       setFormData({
         name: "",
         slug: "",
@@ -70,8 +86,98 @@ export default function AdminPlansPage() {
         trialDays: 14,
       });
       toast.success("Subscription plan created successfully.");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Unique slug required.");
+    } catch (error: unknown) {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message ||
+          "Unique slug is required. Please choose a different slug.",
+      );
+    }
+  };
+
+  const handleDeactivatePlan = async (planId: string) => {
+    if (!confirm("Are you sure you want to deactivate this plan?")) return;
+    try {
+      await adminService.deactivatePlan(planId);
+      setPlans((prev) => prev.filter((p) => p.id !== planId));
+      toast.success("Plan deactivated successfully.");
+    } catch (error: unknown) {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message ||
+          "Deactivation failed. Ensure no active subscriptions are using this plan.",
+      );
+    }
+  };
+
+  // --- Feature Handlers ---
+  const handleAddFeature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlan) return;
+
+    try {
+      const newFeature = await adminService.addPlanFeature(
+        selectedPlan.id,
+        featureFormData,
+      );
+
+      // Update local state for the specific plan's features
+      setPlans((prev) =>
+        prev.map((p) =>
+          p.id === selectedPlan.id
+            ? { ...p, features: [...(p.features || []), newFeature] }
+            : p,
+        ),
+      );
+
+      // Update the currently viewed selectedPlan features list
+      setSelectedPlan((prev) =>
+        prev
+          ? {
+              ...prev,
+              features: [...(prev.features || []), newFeature],
+            }
+          : null,
+      );
+
+      setFeatureFormData({
+        name: "",
+        featureCode: "",
+        limitValue: 0,
+        isEnabled: true,
+      });
+      toast.success("Feature added to plan.");
+    } catch (error: unknown) {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Failed to add feature.",
+      );
+    }
+  };
+
+  const handleRemoveFeature = async (featureId: string) => {
+    if (!selectedPlan) return;
+    try {
+      await adminService.deletePlanFeature(selectedPlan.id, featureId);
+
+      const updatedFeatures =
+        selectedPlan.features?.filter((f) => f.id !== featureId) || [];
+
+      setPlans((prev) =>
+        prev.map((p) =>
+          p.id === selectedPlan.id ? { ...p, features: updatedFeatures } : p,
+        ),
+      );
+      setSelectedPlan((prev) =>
+        prev ? { ...prev, features: updatedFeatures } : null,
+      );
+
+      toast.success("Feature removed.");
+    } catch (error: unknown) {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Failed to remove feature.",
+      );
     }
   };
 
@@ -83,18 +189,18 @@ export default function AdminPlansPage() {
             Subscription Plans
           </h1>
           <p className="text-muted-foreground">
-            Manage pricing tiers and billing cycles for the platform.
+            Manage pricing tiers and feature limits.
           </p>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" /> Create Plan
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <form onSubmit={handleCreate}>
+          <DialogContent className="sm:max-w-106.25">
+            <form onSubmit={handleCreatePlan}>
               <DialogHeader>
                 <DialogTitle>Add New Pricing Tier</DialogTitle>
               </DialogHeader>
@@ -207,17 +313,17 @@ export default function AdminPlansPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Plan Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Pricing</TableHead>
-              <TableHead>Trial Period</TableHead>
+              <TableHead>Pricing (M/Y)</TableHead>
+              <TableHead>Features</TableHead>
+              <TableHead>Trial</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
-                  Loading plans...
+                <TableCell colSpan={5} className="text-center">
+                  Loading...
                 </TableCell>
               </TableRow>
             ) : (
@@ -225,30 +331,152 @@ export default function AdminPlansPage() {
                 <TableRow key={plan.id}>
                   <TableCell className="font-bold">{plan.name}</TableCell>
                   <TableCell>
-                    <code className="text-xs bg-muted p-1 rounded">
-                      {plan.slug}
-                    </code>
-                  </TableCell>
-                  <TableCell>
                     <div className="flex flex-col text-sm">
-                      <span className="font-medium">
-                        {plan.priceMonthly} {plan.currency}/mo
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {plan.priceYearly} {plan.currency}/yr
+                      <span>
+                        {plan.priceMonthly} / {plan.priceYearly} {plan.currency}
                       </span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {plan.features?.length || 0} Features
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center text-sm gap-1">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      {plan.trialDays} days
+                      <Clock className="h-3 w-3" /> {plan.trialDays}d
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      <Settings2 className="h-4 w-4 mr-2" /> Configure Features
-                    </Button>
+                    <Dialog
+                      onOpenChange={(open) => open && setSelectedPlan(plan)}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Settings2 className="h-4 w-4 mr-2" /> Manage Features
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-150">
+                        <DialogHeader>
+                          <DialogTitle>Features for {plan.name}</DialogTitle>
+                        </DialogHeader>
+
+                        {/* Add Feature Form */}
+                        <form
+                          onSubmit={handleAddFeature}
+                          className="grid grid-cols-4 gap-2 items-end pb-4 border-b"
+                        >
+                          <div className="col-span-1 space-y-1">
+                            <Label className="text-xs">Name</Label>
+                            <Input
+                              placeholder="Projects"
+                              value={featureFormData.name}
+                              onChange={(e) =>
+                                setFeatureFormData({
+                                  ...featureFormData,
+                                  name: e.target.value,
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div className="col-span-1 space-y-1">
+                            <Label className="text-xs">Code</Label>
+                            <Input
+                              placeholder="max_projects"
+                              value={featureFormData.featureCode}
+                              onChange={(e) =>
+                                setFeatureFormData({
+                                  ...featureFormData,
+                                  featureCode: e.target.value,
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div className="col-span-1 space-y-1">
+                            <Label className="text-xs">Limit (-1=∞)</Label>
+                            <Input
+                              type="number"
+                              value={featureFormData.limitValue}
+                              onChange={(e) =>
+                                setFeatureFormData({
+                                  ...featureFormData,
+                                  limitValue: Number(e.target.value),
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <Button type="submit" size="sm" className="w-full">
+                            Add
+                          </Button>
+                        </form>
+
+                        {/* Features List */}
+                        <div className="pt-4 space-y-3 max-h-[40vh] overflow-y-auto">
+                          {selectedPlan?.features?.length === 0 ? (
+                            <p className="text-sm text-center text-muted-foreground py-4">
+                              No features defined yet.
+                            </p>
+                          ) : (
+                            selectedPlan?.features?.map((feature) => (
+                              <div
+                                key={feature.id}
+                                className="flex items-center justify-between p-2 rounded-md bg-muted/50 border"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {feature.isEnabled ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4 text-destructive" />
+                                  )}
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {feature.name}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                      {feature.description}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <Badge
+                                    variant="outline"
+                                    className="flex gap-1 items-center"
+                                  >
+                                    <Hash className="h-3 w-3" />{" "}
+                                    {feature.limitValue === -1
+                                      ? "Unlimited"
+                                      : feature.limitValue}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleRemoveFeature(feature.id)
+                                    }
+                                    className="text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <div className="flex items-center text-sm gap-1">
+                      <Button
+                        onClick={() => handleDeactivatePlan(plan?.id as string)}
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" /> Deactivate
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

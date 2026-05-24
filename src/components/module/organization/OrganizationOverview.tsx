@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   organizationService,
   OrganizationStats,
 } from "@/services/organization.service";
+import {
+  subscriptionService,
+  Subscription,
+} from "@/services/subscription.service";
 import {
   Users,
   FolderKanban,
@@ -13,32 +17,35 @@ import {
   Key,
   CreditCard,
   TrendingUp,
-  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function OrganizationOverview() {
-  const { orgSlug } = useParams();
+  const { orgId } = useParams();
+  const router = useRouter();
   const [stats, setStats] = useState<OrganizationStats | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock: In your real app, get this from your OrgContext/Zustand
-  // where you stored the mapping of slug -> id during initial load.
-  const orgId = "UUID_FROM_CONTEXT";
-
   useEffect(() => {
-    const loadStats = async () => {
+    const loadData = async () => {
       if (!orgId) return;
       try {
-        const data = await organizationService.getOrganizationStats(orgId);
-        setStats(data);
+        const [statsData, subData] = await Promise.all([
+          organizationService.getOrganizationStats(orgId as string),
+          subscriptionService.getSubscription(orgId as string),
+        ]);
+        setStats(statsData);
+        setSubscription(subData);
       } catch (error) {
-        console.error("Stats Error:", error);
+        console.error("Loading Error:", error);
       } finally {
         setLoading(false);
       }
     };
-    loadStats();
+    loadData();
   }, [orgId]);
 
   if (loading) {
@@ -80,16 +87,17 @@ export default function OrganizationOverview() {
 
   return (
     <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Workspace Overview
-        </h1>
-        <p className="text-muted-foreground italic">
-          Current health and activity for /{orgSlug}
-        </p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Workspace Overview
+          </h1>
+          <p className="text-muted-foreground italic">
+            Health and activity for /{orgId}
+          </p>
+        </div>
       </div>
 
-      {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card) => (
           <Card
@@ -105,8 +113,7 @@ export default function OrganizationOverview() {
             <CardContent>
               <div className="text-2xl font-bold">{card.value ?? 0}</div>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3 text-green-500" /> +4% from last
-                month
+                <TrendingUp className="h-3 w-3 text-green-500" /> +4% this month
               </p>
             </CardContent>
           </Card>
@@ -121,19 +128,29 @@ export default function OrganizationOverview() {
           </div>
           <div>
             <h3 className="text-xl font-bold">
-              Current Plan: {stats?.subscription.planName}
+              Current Plan: {subscription?.plan?.name || "Free Tier"}
             </h3>
             <p className="text-sm text-muted-foreground">
               Your subscription is{" "}
-              <span className="text-green-600 font-bold uppercase">
-                {stats?.subscription.status}
+              <span
+                className={cn(
+                  "font-bold uppercase",
+                  subscription?.status === "ACTIVE"
+                    ? "text-green-600"
+                    : "text-orange-500",
+                )}
+              >
+                {subscription?.status || "NO ACTIVE PLAN"}
               </span>
             </p>
           </div>
         </div>
-        <button className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity">
-          Upgrade Plan
-        </button>
+        <Button
+          onClick={() => router.push(`/${orgId}/billing/pricing`)}
+          className="rounded-xl font-bold px-8 cursor-pointer"
+        >
+          {subscription ? "Manage Plan" : "Upgrade Plan"}
+        </Button>
       </div>
     </div>
   );

@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  adminService,
-  OrganizationListItem,
-  PaginatedOrganizations,
-} from "@/services/admin.service";
+import { adminService, PaginatedOrganizations } from "@/services/admin.service";
 import {
   Table,
   TableBody,
@@ -34,6 +30,7 @@ export default function AdminOrganizationsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
+  console.log(" Fetched Organizations: ", data?.data);
   const fetchOrgs = async () => {
     setLoading(true);
     try {
@@ -110,14 +107,14 @@ export default function AdminOrganizationsPage() {
                   Fetching organizations...
                 </TableCell>
               </TableRow>
-            ) : data?.organizations.length === 0 ? (
+            ) : (data?.data ?? []).length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12">
                   No organizations found.
                 </TableCell>
               </TableRow>
             ) : (
-              data?.organizations.map((org) => (
+              data?.data?.map((org) => (
                 <TableRow key={org.id}>
                   <TableCell className="font-semibold">
                     <div className="flex items-center gap-2">
@@ -143,7 +140,7 @@ export default function AdminOrganizationsPage() {
                     <Badge
                       variant={org.planId === "PRO" ? "default" : "outline"}
                     >
-                      {org.planId}
+                      {org.planId || "Free"}
                     </Badge>
                   </TableCell>
                   <TableCell>

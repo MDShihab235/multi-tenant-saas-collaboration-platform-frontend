@@ -31,8 +31,12 @@ export default function RolePermissionMatrix({ orgId, roleId }: Props) {
         setLoading(true);
         const res = await organizationService.getRolePermissions(orgId, roleId);
         setData(res);
-      } catch (err: any) {
-        toast.error("Failed to load permissions", { description: err.message });
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error occurred";
+        toast.error("Failed to load permissions", {
+          description: errorMessage,
+        });
       } finally {
         setLoading(false);
       }
@@ -66,12 +70,15 @@ export default function RolePermissionMatrix({ orgId, roleId }: Props) {
   }
 
   // Grouping logic: "ORG_UPDATE" -> Resource: ORG, Action: UPDATE
-  const groupedPermissions = data.permissions.reduce((acc: any, curr) => {
-    const resource = curr.resource || "General";
-    if (!acc[resource]) acc[resource] = [];
-    acc[resource].push(curr.action);
-    return acc;
-  }, {});
+  const groupedPermissions = data.permissions.reduce(
+    (acc: Record<string, string[]>, curr) => {
+      const resource = curr.resource || "General";
+      if (!acc[resource]) acc[resource] = [];
+      acc[resource].push(curr.action);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="space-y-6">

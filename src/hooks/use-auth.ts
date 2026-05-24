@@ -21,7 +21,6 @@ interface AuthState {
   // Actions
   setUser: (user: User | null) => void;
   fetchUser: () => Promise<void>;
-  logout: () => void;
   fetchAuthMe: () => Promise<void>;
 }
 
@@ -56,10 +55,6 @@ export const useAuth = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => {
-    // Clear any local storage/cookies if necessary
-    set({ user: null, isAuthenticated: false, isLoading: false });
-  },
   fetchAuthMe: async () => {
     set({ isLoading: true });
     try {
@@ -80,6 +75,7 @@ export const useAuth = create<AuthState>((set) => ({
       };
       set({ user: transformedUser, isAuthenticated: true, isLoading: false });
     } catch (error) {
+      console.log(error);
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },

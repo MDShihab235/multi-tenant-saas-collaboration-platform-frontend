@@ -10,20 +10,22 @@ export interface UserListItem {
   name: string;
   email: string;
   status: "ACTIVE" | "BLOCKED" | "INACTIVE";
-  role: "USER" | "ADMIN";
   createdAt: string;
   lastLoginAt: string;
 }
 
 export interface PaginatedUsers {
-  users: UserListItem[];
+  data: UserDetail[];
   totalCount: number;
   totalPages: number;
 }
 export interface UserDetail extends UserListItem {
   memberships: {
     id: string;
-    role: "OWNER" | "ADMIN" | "MEMBER";
+    role: {
+      id: string;
+      name: string;
+    };
     organization: {
       id: string;
       name: string;
@@ -40,6 +42,12 @@ export interface OrganizationListItem {
   _count: {
     memberships: number;
   };
+  subscription: {
+    plan: {
+      name: string;
+      slug: string;
+    };
+  };
   owner: {
     id: string;
     name: string;
@@ -49,7 +57,7 @@ export interface OrganizationListItem {
 }
 
 export interface PaginatedOrganizations {
-  organizations: OrganizationListItem[];
+  data: OrganizationListItem[];
   totalCount: number;
   totalPages: number;
 }
@@ -97,12 +105,16 @@ export interface Plan {
   id: string;
   name: string;
   slug: string;
-  priceMonthly: number;
-  priceYearly: number;
+  isActive: boolean;
+  description: string;
+  price: number;
   currency: string;
   trialDays: number;
-  createdAt: string;
-  isActive: boolean;
+  priceMonthly: number;
+  priceYearly: number;
+  interval: "month" | "year";
+  features: PlanFeature[];
+  isPopular?: boolean;
 }
 
 export interface FileItem {
@@ -231,7 +243,9 @@ export const adminService = {
     return response.data.data;
   },
   deactivatePlan: async (planId: string): Promise<Plan> => {
+    console.log("planId:", planId);
     const response = await api.delete(`/api/v1/plan/${planId}`);
+
     return response.data.data;
   },
   // Add to adminService object
@@ -244,7 +258,7 @@ export const adminService = {
       isEnabled?: boolean;
     },
   ): Promise<PlanFeature> => {
-    const response = await api.post(`/api/v1/plan/${planId}/feature`, data);
+    const response = await api.post(`/api/v1/plan/${planId}/features`, data);
     return response.data.data;
   },
 
@@ -258,7 +272,7 @@ export const adminService = {
     },
   ): Promise<PlanFeature> => {
     const response = await api.patch(
-      `/api/v1/plan/${planId}/feature/${featureId}`,
+      `/api/v1/plan/${planId}/features/${featureId}`,
       data,
     );
     return response.data.data;
@@ -268,7 +282,7 @@ export const adminService = {
     planId: string,
     featureId: string,
   ): Promise<void> => {
-    await api.delete(`/api/v1/plan/${planId}/feature/${featureId}`);
+    await api.delete(`/api/v1/plan/${planId}/features/${featureId}`);
   },
 
   // Add to adminService object

@@ -11,10 +11,12 @@ import {
   MessageSquare,
   FolderKanban,
   Building2,
+  House,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
+  { name: "Home", href: "/", icon: House },
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Organizations", href: "/overview", icon: Building2 },
   {

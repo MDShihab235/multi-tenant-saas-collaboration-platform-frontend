@@ -15,7 +15,7 @@ export interface Invoice {
   createdAt: string;
 }
 export interface PaginatedInvoices {
-  invoices: Invoice[];
+  invoices: InvoiceDetail[];
   totalCount: number;
   currentPage: number;
   totalPages: number;
@@ -36,7 +36,7 @@ export interface Subscription {
     price: number;
     features: string[];
   };
-  invoices: Invoice[];
+  invoices: InvoiceDetail[];
 }
 export interface UsageMetric {
   used: number;
@@ -50,7 +50,7 @@ export interface OrgUsage {
 }
 export interface InvoiceDetail extends Invoice {
   amountDue: number;
-  amountRemaining: number;
+  amountPaid: number;
   currency: string;
   subtotal: number;
   tax: number;

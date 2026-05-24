@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  adminService,
-  UserListItem,
-  PaginatedUsers,
-} from "@/services/admin.service";
+import { adminService, PaginatedUsers } from "@/services/admin.service";
 import {
   Table,
   TableBody,
@@ -73,7 +69,7 @@ export default function AdminUsersPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Organization:Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -87,12 +83,22 @@ export default function AdminUsersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              data?.users.map((user) => (
+              data?.data?.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{user.role}</Badge>
+                  <TableCell className="flex flex-col gap-1">
+                    {user.memberships?.map((m) => (
+                      <Badge key={m.id} variant="outline">
+                        {/* Also add '?' here if role might be missing */}
+                        {m.organization?.name || "No Organization"}:
+                        {m.role?.name || "No Role"}
+                      </Badge>
+                    )) || (
+                      <span className="text-muted-foreground text-xs">
+                        No Memberships
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge

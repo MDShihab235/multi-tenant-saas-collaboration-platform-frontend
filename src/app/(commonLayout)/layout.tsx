@@ -10,7 +10,6 @@ export default function CommonLayout({
     <div className="relative min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">{children}</main>
-      {/* Footer can go here */}
       <Footer />
     </div>
   );

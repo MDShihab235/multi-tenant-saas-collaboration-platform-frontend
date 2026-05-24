@@ -38,8 +38,6 @@ import {
   Save,
   AlertTriangle,
   Loader2,
-  Info,
-  PowerOff,
   CheckCircle2,
   Zap,
   Plus,
@@ -413,7 +411,7 @@ export default function AdminPlanDetailView() {
           </Card>
 
           {plan?.isActive && (
-            <Card className="border-destructive/20 bg-destructive/[0.01]">
+            <Card className="border-destructive/20 bg-destructive/1">
               <CardHeader>
                 <CardTitle className="text-sm text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" /> Retirement Zone

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { projectService } from "@/services/project.service";
 import {
   FolderPlus,
@@ -16,25 +16,33 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-
-export default function CreateProject() {
-  const { orgSlug } = useParams();
+interface CreateProjectProps {
+  orgslug: string;
+  orgId: string;
+}
+export default function CreateProject({ orgslug, orgId }: CreateProjectProps) {
   const router = useRouter();
-
-  // In production, get this from your useOrg hook or context
-  const orgId = "ACTUAL_ORG_ID_FROM_CONTEXT";
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  console.log("Org Slug:", orgslug);
+  console.log("Org ID:", orgId);
   const handleSubmit = async (e: React.FormEvent) => {
+    if (!orgId) {
+      toast.error("Missing Organization ID", {
+        description: "Please refresh the page.",
+      });
+      return;
+    }
+    console.log("Submitting with Org ID:", orgId, "\n and Org Slug:", orgslug);
     e.preventDefault();
     if (!name.trim() || !orgId) return;
 
     setIsSubmitting(true);
     try {
-      const newProject = await projectService.createProject(orgId, {
+      const newProject = await projectService.createProject(orgslug as string, {
         name,
         description,
       });
@@ -44,7 +52,8 @@ export default function CreateProject() {
       });
 
       // Redirect to the newly created project's overview
-      router.push(`/${orgSlug}/projects/${newProject.id}`);
+      router.push(`/${orgslug}/projects/${newProject.id}`);
+      router.refresh();
     } catch (error: any) {
       toast.error("Creation Failed", { description: error.message });
     } finally {
@@ -111,8 +120,8 @@ export default function CreateProject() {
         <div className="pt-4 flex flex-col gap-3">
           <Button
             type="submit"
-            disabled={isSubmitting || !name.trim()}
-            className="w-full h-12 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+            // disabled={isSubmitting || !name.trim()}
+            className="cursor-pointer w-full h-12 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
           >
             {isSubmitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />

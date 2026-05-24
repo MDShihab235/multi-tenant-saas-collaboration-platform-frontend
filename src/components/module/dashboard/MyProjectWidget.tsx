@@ -4,15 +4,12 @@ import { useEffect, useState } from "react";
 import { projectService, MyProject } from "@/services/project.service";
 import {
   Briefcase,
-  ChevronRight,
   Layers,
-  Users,
   ArrowUpRight,
   Loader2,
   Building2,
 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress"; // Assuming shadcn progress
 
 export function MyProjectsWidget() {
@@ -23,6 +20,7 @@ export function MyProjectsWidget() {
     const load = async () => {
       try {
         const data = await projectService.getMyProjects();
+
         setProjects(data);
       } catch (err) {
         console.error(err);
@@ -50,7 +48,7 @@ export function MyProjectsWidget() {
           <h2 className="font-bold text-lg">My Projects</h2>
         </div>
         <Link
-          href="/dashboard/projects"
+          href={`dashboard/${projects[0]?.organization.id}/projects`}
           className="text-xs font-bold text-primary hover:underline"
         >
           View All
@@ -62,7 +60,7 @@ export function MyProjectsWidget() {
           projects.slice(0, 5).map((project) => (
             <Link
               key={project.id}
-              href={`/${project.organization.slug}/projects/${project.id}`}
+              href={`/${project.organization.id}/projects/${project.id}`}
               className="block p-5 hover:bg-muted/30 transition-colors group"
             >
               <div className="flex items-center justify-between mb-3">

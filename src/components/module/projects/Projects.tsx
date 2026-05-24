@@ -6,20 +6,19 @@ import {
   FolderKanban,
   Search,
   Plus,
-  LayoutGrid,
-  List,
   ChevronLeft,
   ChevronRight,
   MoreVertical,
   CheckCircle2,
   Users2,
-  Clock,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { debounce } from "lodash";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -27,20 +26,24 @@ export default function Projects() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  const orgId = "ACTUAL_ORG_ID"; // Get from context
-
+  const { orgId } = useParams();
+  // const orgslug = params.orgslug;
+  // Get from context
+  // const orgId = "org_123"; // Replace with actual org ID from context
+  console.log("Current Org ID: ", orgId);
+  console.log("Projects", projects);
   const fetchProjects = async (currentPage: number, searchTerm: string) => {
+    if (!orgId) return;
     try {
       setLoading(true);
       const data = await projectService.getProjects(
-        orgId,
+        orgId as string,
         currentPage,
         9,
         searchTerm,
       );
-      setProjects(data.projects);
-      setTotalPages(data.pages);
+      setProjects(data?.projects || []);
+      setTotalPages(data?.pages || 1);
     } catch (error: any) {
       toast.error("Error", { description: error.message });
     } finally {
@@ -59,14 +62,14 @@ export default function Projects() {
 
   useEffect(() => {
     fetchProjects(page, search);
-  }, [page]);
+  }, [page, orgId]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearch(value);
     debouncedSearch(value);
   };
-
+  console.log("Last Fetched Projects", projects);
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -79,9 +82,12 @@ export default function Projects() {
             Manage your organization&apos;s workspaces and initiatives.
           </p>
         </div>
-        <Button className="rounded-2xl h-12 px-6 font-bold shadow-lg shadow-primary/20">
+        <Link
+          href={`/${orgId}/projects/create`}
+          className="rounded-2xl h-12 px-6 font-bold shadow-lg shadow-primary/20 cursor-pointer bg-primary text-white hover:bg-primary/90 transition-colors flex items-center gap-2"
+        >
           <Plus className="w-5 h-5 mr-2" /> New Project
-        </Button>
+        </Link>
       </div>
 
       {/* Controls */}
@@ -102,7 +108,7 @@ export default function Projects() {
         <div className="h-64 flex items-center justify-center">
           <Loader2 className="animate-spin text-primary w-10 h-10" />
         </div>
-      ) : projects.length > 0 ? (
+      ) : projects && projects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <div

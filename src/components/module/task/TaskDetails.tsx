@@ -10,6 +10,8 @@ import {
   TaskComment,
   TaskAttachment,
   TaskLabel,
+  Label,
+  Task,
 } from "@/services/project.service";
 import {
   ArrowLeft,
@@ -69,11 +71,11 @@ export default function TaskDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State
-  const [task, setTask] = useState<TaskDetail | null>(null);
+  const [task, setTask] = useState<Task | null>(null);
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
-  const [availableLabels, setAvailableLabels] = useState<any[]>([]);
+  const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
@@ -95,11 +97,25 @@ export default function TaskDetailPage() {
         projectService.getTaskAttachments(taskId as string),
         projectService.getTaskLabels(taskId as string),
       ]);
-      setTask(tData);
+      const transformedLabels = lData.map((labelData) => ({
+        id: labelData.id,
+        taskId: taskId as string,
+        labelId: labelData.labelId,
+        label: labelData.label,
+      }));
+      setTask({
+        ...tData,
+        taskLabels: transformedLabels,
+        assignedTo: tData.assignee?.id || null,
+        dueDate: tData.dueDate,
+        _count: tData._count,
+      } as Task);
       setMembers(mData);
       setComments(cData);
       setAttachments(aData);
-      setAvailableLabels(lData);
+      setAvailableLabels(
+        lData.map((tl) => ({ ...tl.label, projectId: projectId as string })),
+      );
       setTitleInput(tData.title);
     } catch {
       router.push(`/${orgSlug}/projects/${projectId}`);
@@ -115,7 +131,7 @@ export default function TaskDetailPage() {
   // --- 2. OPTIMISTIC UPDATES ---
   const handleMutation = async (
     action: () => Promise<any>,
-    optimistic: Partial<TaskDetail>,
+    optimistic: Partial<Task>,
     msg: string,
   ) => {
     if (!task) return;

@@ -27,7 +27,7 @@ export default function AdminUserDetailPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
-
+  console.log(" User Details: ", user);
   useEffect(() => {
     const fetchDetail = async () => {
       try {
@@ -64,6 +64,7 @@ export default function AdminUserDetailPage() {
 
   if (loading) return <div className="p-8">Loading profile...</div>;
   if (!user) return <div className="p-8">User not found.</div>;
+  console.log("Last User Details: ", user);
 
   return (
     <div className="p-8 space-y-6 max-w-6xl mx-auto">
@@ -100,7 +101,7 @@ export default function AdminUserDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* User Identity Card */}
-        <Card className="md:col-span-1">
+        <Card className="md:col-span-full ">
           <CardHeader className="text-center">
             <div className="mx-auto bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mb-4">
               <UserCircle className="w-12 h-12 text-primary" />
@@ -108,7 +109,12 @@ export default function AdminUserDetailPage() {
             <CardTitle>{user.name}</CardTitle>
             <CardDescription>{user.email}</CardDescription>
             <div className="mt-2 flex justify-center gap-2">
-              <Badge>{user.role}</Badge>
+              {user.memberships.map((m) => (
+                <Badge key={m.id} variant="outline">
+                  {m.organization.name}:{m.role.name}
+                </Badge>
+              ))}
+              {/* <Badge>{user.role}</Badge> */}
               <Badge
                 variant={user.status === "ACTIVE" ? "default" : "destructive"}
               >
@@ -162,7 +168,7 @@ export default function AdminUserDetailPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <Badge variant="secondary">{m.role}</Badge>
+                      <Badge variant="secondary">{m.role.name}</Badge>
                       <p className="text-xs text-muted-foreground mt-1">
                         Plan: {m.organization.planId}
                       </p>

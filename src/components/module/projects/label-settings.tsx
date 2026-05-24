@@ -28,6 +28,10 @@ export default function LabelsSettingsPage() {
     );
   };
 
+  const handleDeleteLocal = (labelId: string) => {
+    setLabels((prev) => prev.filter((l) => l.id !== labelId));
+  };
+
   if (loading) return <Loader2 className="animate-spin m-10" />;
 
   return (
@@ -48,6 +52,7 @@ export default function LabelsSettingsPage() {
             label={label}
             projectId={projectId}
             onUpdate={handleUpdateLocal}
+            onDelete={handleDeleteLocal}
           />
         ))}
       </div>
