@@ -1,5 +1,4 @@
 import axios from "axios";
-import { Organization } from "./organization.service";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
@@ -38,7 +37,10 @@ export interface Subscription {
     features: string[];
   };
   invoices: InvoiceDetail[];
-  organization: Organization[];
+  organization: {
+    id: string;
+    name: string;
+  };
 }
 export interface UsageMetric {
   used: number;

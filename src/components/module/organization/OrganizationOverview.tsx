@@ -84,13 +84,12 @@ export default function OrganizationOverview() {
       color: "text-orange-500",
     },
   ];
-
   return (
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {subscription?.organization[0]?.name || "Workspace"} Overview
+            {subscription?.organization?.name || "Workspace"} Overview
           </h1>
           <p className="text-muted-foreground italic">
             Health and activity for /{orgId}
