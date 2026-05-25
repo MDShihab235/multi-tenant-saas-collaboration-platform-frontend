@@ -90,7 +90,7 @@ export default function OrganizationOverview() {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Workspace Overview
+            {subscription?.organization[0]?.name || "Workspace"} Overview
           </h1>
           <p className="text-muted-foreground italic">
             Health and activity for /{orgId}
