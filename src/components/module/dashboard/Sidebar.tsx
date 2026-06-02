@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Home", href: "/", icon: House },
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Organizations", href: "/overview", icon: Building2 },
+  { name: "Organizations", href: "/admin/organizations", icon: Building2 },
   {
     name: "Create Organization",
     href: "/dashboard/organizations/create",
@@ -85,7 +85,7 @@ export default function Sidebar() {
             Current Workspace
           </p>
           <div className="flex items-center gap-3 px-1">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-primary to-purple-600 flex items-center justify-center text-xs font-bold text-white">
               AC
             </div>
             <div className="overflow-hidden">
